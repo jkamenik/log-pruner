@@ -10,13 +10,19 @@ var ErrFileProtected = errors.New("File is protected")
 type File struct {
 	os.FileInfo
 
+	absPath string
 	prune   bool
 	protect bool
 }
 
-// New upconverts a os.FileInfo object into a prunable file
-func New(fileInfo os.FileInfo) *File {
-	return &File{fileInfo, false, false}
+// NewFile upconverts a os.FileInfo object into a prunable file
+func NewFile(fileInfo os.FileInfo, absPath string) File {
+	return File{fileInfo, absPath, false, false}
+}
+
+// AbsPath returns the full ABS path to the file
+func (file *File) AbsPath() string {
+	return file.absPath
 }
 
 // WillPrune returns true of the file is marked for pruning
