@@ -11,7 +11,10 @@ import (
 var rootCmd = &cobra.Command{
 	Version: "1.0.0",
 	Use:     "log-pruner",
-	Long:    `A command that either scan or monitors a diretory full of files and removes them based on age or size criteria.`,
+	Long: `A command that either scan or monitors a diretory full of files and removes them based on age or size criteria.
+
+All supplied directories are scanned, and then pruned of files larger then their max age.  Then the files are rescanned and pruned if the path is still too large.
+`,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -24,10 +27,7 @@ func Execute() {
 }
 
 func init() {
-	// rootCmd.PersistentFlags().
-
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.log-pruner-1.yaml)")
+	rootCmd.PersistentFlags().StringSlice("path", []string{"/logs"}, "One or more paths for the command to check.  Both comma separated and multiple arguments are allowed.  Each path is taken separately in its calculations.")
+	rootCmd.PersistentFlags().Int("path-target-size", 10, "The target size for the entire path in GB.  Files will be deleted if the target size is greater then this value, even if no files are older then the max age.")
+	rootCmd.PersistentFlags().Int("file-max-age", 3, "The max number of days to keep a file before it is deleted.")
 }
