@@ -1,6 +1,7 @@
 package scanner
 
 import (
+	"fmt"
 	"os"
 	"sort"
 	"time"
@@ -16,15 +17,16 @@ type Path struct {
 	basePath string
 	files    []File
 
-	fileAgeout int
+	fileAgeoutDays int
+	maxSizeBytes   int64
 
 	totalSize   int64
 	totalPruned int64
 }
 
 // NewPath creates a new Path object containing the intial list of walked files from basePath.  These files can be later scanned for size or age.
-func NewPath(basePath string, fileAgeout int) *Path {
-	path := &Path{basePath: basePath, fileAgeout: fileAgeout}
+func NewPath(basePath string, fileAgeoutDays int, maxSizeBytes int64) *Path {
+	path := &Path{basePath: basePath, fileAgeoutDays: fileAgeoutDays, maxSizeBytes: maxSizeBytes}
 
 	path.ReadDir()
 
@@ -84,7 +86,7 @@ func (path *Path) TotalAfterPrune() int64 {
 
 // MarkOldFiles runs the list and
 func (path *Path) MarkOldFiles() {
-	before := time.Now().AddDate(0, 0, -1*path.fileAgeout)
+	before := time.Now().AddDate(0, 0, -1*path.fileAgeoutDays)
 
 	for i, file := range path.files {
 		if file.ModTime().Before(before) {
@@ -106,3 +108,27 @@ func (path *Path) rescanForPruned() {
 }
 
 // TODO: SizeScan
+func (path *Path) MarkFileUntilFit() {
+	for i, file := range path.files {
+		fmt.Println(file)
+		fmt.Printf("Path total size (%d) vs max size (%d)\n", path.TotalAfterPrune(), path.maxSizeBytes)
+		if path.TotalAfterPrune() <= path.maxSizeBytes {
+			fmt.Printf("")
+			break
+		}
+		if file.WillPrune() {
+			// skip files already pruned
+			continue
+		}
+
+		fmt.Printf("%s will be pruned\n", file.AbsPath())
+		if err := path.files[i].Prune(true); err == nil {
+			path.totalPruned = path.totalPruned + file.Size()
+		} else {
+			fmt.Println(err)
+		}
+	}
+
+	// just for run rescan everything
+	path.rescanForPruned()
+}

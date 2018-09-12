@@ -16,7 +16,7 @@ func TestSimpleScan(t *testing.T) {
 	AppFs.MkdirAll("/logs/sub", 0644)
 	afero.WriteFile(AppFs, "/logs/sub/second.log", []byte("Some test log"), 0644)
 
-	path := scanner.NewPath("/logs", 3)
+	path := scanner.NewPath("/logs", 3, 0)
 	if len(path.Files()) < 2 {
 		t.Error("Path should contain at least one file.")
 	}
@@ -48,7 +48,7 @@ func TestResultsOrdered(t *testing.T) {
 	AppFs.Chtimes(second, secondTime, secondTime)
 	AppFs.Chtimes(third, secondTime, secondTime)
 
-	path := scanner.NewPath("/logs/sub", 3)
+	path := scanner.NewPath("/logs/sub", 3, 0)
 	if len(path.Files()) != 3 {
 		t.Error("Incorrect number of files found")
 	}
@@ -74,7 +74,7 @@ func TestMarkingOldFile(t *testing.T) {
 
 	AppFs.Chtimes(first, firstTime, firstTime)
 
-	path := scanner.NewPath("/logs/sub", 3)
+	path := scanner.NewPath("/logs/sub", 3, 0)
 	if path.TotalSize() != 26 || path.TotalAfterPrune() != 26 {
 		t.Error("Path.TotalSize() is different then expected", path.TotalSize())
 	}
@@ -87,5 +87,36 @@ func TestMarkingOldFile(t *testing.T) {
 
 	if !path.Files()[0].WillPrune() {
 		t.Error("File was not marked for pruning")
+	}
+}
+
+func TestMarkingLargeFile(t *testing.T) {
+	_ = initFs(t, "/logs")
+
+	// z.log should be first, then b.log, then a.log
+	// total size: 39 bytes
+	AppFs.MkdirAll("/logs/sub", 0644)
+	afero.WriteFile(AppFs, "/logs/sub/z.log", []byte("Some test log"), 0644)
+	afero.WriteFile(AppFs, "/logs/sub/b.log", []byte("Some test log"), 0644)
+	afero.WriteFile(AppFs, "/logs/sub/a.log", []byte("Some test log"), 0644)
+
+	// This should prune only the first file
+	path := scanner.NewPath("/logs/sub", 100, 30)
+
+	// Just prove that no files are pruned because of age
+	path.MarkOldFiles()
+	if path.TotalSize() != 39 || path.TotalAfterPrune() != 39 {
+		t.Error("Path.TotalSize() is different then expected", path.TotalSize())
+	}
+
+	path.MarkFileUntilFit()
+	if path.TotalSize() != 39 || path.TotalAfterPrune() != 26 {
+		t.Error("Path.TotalAfterPrune() is different then expected", path.TotalAfterPrune())
+	}
+
+	path = scanner.NewPath("/logs/sub", 100, 25)
+	path.MarkFileUntilFit()
+	if path.TotalSize() != 39 || path.TotalAfterPrune() != 13 {
+		t.Error("Path.TotalAfterPrune() is different then expected", path.TotalAfterPrune())
 	}
 }
