@@ -1,9 +1,9 @@
 package scanner
 
 import (
-	"fmt"
 	"os"
 	"sort"
+	"time"
 
 	"github.com/spf13/afero"
 )
@@ -16,13 +16,15 @@ type Path struct {
 	basePath string
 	files    []File
 
-	// totalSize
-	// total
+	fileAgeout int
+
+	totalSize   int64
+	totalPruned int64
 }
 
 // NewPath creates a new Path object containing the intial list of walked files from basePath.  These files can be later scanned for size or age.
-func NewPath(basePath string) *Path {
-	path := &Path{basePath: basePath}
+func NewPath(basePath string, fileAgeout int) *Path {
+	path := &Path{basePath: basePath, fileAgeout: fileAgeout}
 
 	path.ReadDir()
 
@@ -39,6 +41,8 @@ func (path *Path) ReadDir() ([]File, error) {
 	path.files = nil
 
 	fileList := []File{}
+	totalSize := int64(0)
+	ptrTotalSize := &totalSize
 	err := afero.Walk(AppFs, path.basePath, func(path string, f os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -48,7 +52,7 @@ func (path *Path) ReadDir() ([]File, error) {
 			return nil
 		}
 
-		fmt.Println(path)
+		*ptrTotalSize = *ptrTotalSize + f.Size()
 
 		fileList = append(fileList, NewFile(f, path))
 		return nil
@@ -62,14 +66,43 @@ func (path *Path) ReadDir() ([]File, error) {
 	sort.Sort(sortFile(fileList))
 
 	path.files = fileList
+	path.totalSize = totalSize
+	path.totalPruned = 0
 
 	return path.files, nil
 }
 
-// MarkOldFiles runs the list and
-func (path *Path) MarkOldFiles() {
-
+// TotalSize returns the total size in bytes for the scanned files.  Useful in seeing now much will be saved when saving.
+func (path *Path) TotalSize() int64 {
+	return path.totalSize
 }
 
-// TODO: AgeScan
+// TotalAfterPrune returns the total size minus any files marked for pruning
+func (path *Path) TotalAfterPrune() int64 {
+	return path.totalSize - path.totalPruned
+}
+
+// MarkOldFiles runs the list and
+func (path *Path) MarkOldFiles() {
+	before := time.Now().AddDate(0, 0, -1*path.fileAgeout)
+
+	for i, file := range path.files {
+		if file.ModTime().Before(before) {
+			path.files[i].Prune(true)
+		}
+	}
+
+	path.rescanForPruned()
+}
+
+// rescan pruned
+func (path *Path) rescanForPruned() {
+	path.totalPruned = 0
+	for _, file := range path.files {
+		if file.WillPrune() {
+			path.totalPruned = path.totalPruned + file.Size()
+		}
+	}
+}
+
 // TODO: SizeScan
