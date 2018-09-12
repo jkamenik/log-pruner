@@ -1,7 +1,10 @@
 package scanner
 
-import "os"
-import "errors"
+import (
+	"errors"
+	"fmt"
+	"os"
+)
 
 // ErrFileProtected defined attempts modify protected files
 var ErrFileProtected = errors.New("File is protected")
@@ -13,6 +16,19 @@ type File struct {
 	absPath string
 	prune   bool
 	protect bool
+}
+
+func (file File) String() string {
+	protected := "(not protected)"
+	pruned := "(no pruned)"
+	if file.IsProtected() {
+		protected = "(protected)"
+	}
+	if file.WillPrune() {
+		pruned = "(prune)"
+	}
+
+	return fmt.Sprintf("%s %s %s %s", file.absPath, protected, pruned, file.ModTime())
 }
 
 // NewFile upconverts a os.FileInfo object into a prunable file
