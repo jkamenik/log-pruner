@@ -119,4 +119,19 @@ func TestMarkingLargeFile(t *testing.T) {
 	if path.TotalSize() != 39 || path.TotalAfterPrune() != 13 {
 		t.Error("Path.TotalAfterPrune() is different then expected", path.TotalAfterPrune())
 	}
+
+	err := path.Prune()
+	if err != nil {
+		t.Error("Failed to prune files.")
+	}
+
+	if path.TotalSize() != 13 || path.TotalAfterPrune() != 13 {
+		t.Errorf("Path TotalSize was not recalulated (%d, %d).", path.TotalSize(), path.TotalAfterPrune())
+	}
+
+	// use this to find all the files that weren't removed
+	path = scanner.NewPath("/logs/sub", 100, 25)
+	if len(path.Files()) > 1 {
+		t.Error("Files where not removed.")
+	}
 }

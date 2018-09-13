@@ -1,7 +1,7 @@
 package scanner
 
 import (
-	"fmt"
+	"log"
 	"os"
 	"sort"
 	"time"
@@ -26,6 +26,7 @@ type Path struct {
 
 // NewPath creates a new Path object containing the intial list of walked files from basePath.  These files can be later scanned for size or age.
 func NewPath(basePath string, fileAgeoutDays int, maxSizeBytes int64) *Path {
+	log.Printf("NewPath for %s, %dDays, %dBytes", basePath, fileAgeoutDays, maxSizeBytes)
 	path := &Path{basePath: basePath, fileAgeoutDays: fileAgeoutDays, maxSizeBytes: maxSizeBytes}
 
 	path.ReadDir()
@@ -40,6 +41,7 @@ func (path *Path) Files() []File {
 
 // ReadDir is a destructive full re-read of the directory.  All existing, prune details are lost.
 func (path *Path) ReadDir() ([]File, error) {
+	log.Print("ReadDir()")
 	path.files = nil
 
 	fileList := []File{}
@@ -54,6 +56,8 @@ func (path *Path) ReadDir() ([]File, error) {
 			return nil
 		}
 
+		log.Printf("%s (%dBytes) %s", path, f.Size(), f.ModTime())
+
 		*ptrTotalSize = *ptrTotalSize + f.Size()
 
 		fileList = append(fileList, NewFile(f, path))
@@ -65,6 +69,7 @@ func (path *Path) ReadDir() ([]File, error) {
 	}
 
 	// sort
+	log.Print("Sorting files")
 	sort.Sort(sortFile(fileList))
 
 	path.files = fileList
@@ -81,15 +86,18 @@ func (path *Path) TotalSize() int64 {
 
 // TotalAfterPrune returns the total size minus any files marked for pruning
 func (path *Path) TotalAfterPrune() int64 {
+	log.Printf("TotalAfterPrune: %dbytes, %dbytes prunable", path.totalSize, path.totalPruned)
 	return path.totalSize - path.totalPruned
 }
 
 // MarkOldFiles runs the list and
 func (path *Path) MarkOldFiles() {
+	log.Printf("MarkOldFiles older then %ddays", path.fileAgeoutDays)
 	before := time.Now().AddDate(0, 0, -1*path.fileAgeoutDays)
 
 	for i, file := range path.files {
 		if file.ModTime().Before(before) {
+			log.Printf("%s older then 3 days, marked for pruning", file.AbsPath())
 			path.files[i].Prune(true)
 		}
 	}
@@ -109,11 +117,10 @@ func (path *Path) rescanForPruned() {
 
 // TODO: SizeScan
 func (path *Path) MarkFileUntilFit() {
+	log.Printf("MarkFileUntilFit into %dbytes, currently %dbytes", path.maxSizeBytes, path.TotalAfterPrune())
 	for i, file := range path.files {
-		fmt.Println(file)
-		fmt.Printf("Path total size (%d) vs max size (%d)\n", path.TotalAfterPrune(), path.maxSizeBytes)
 		if path.TotalAfterPrune() <= path.maxSizeBytes {
-			fmt.Printf("")
+			log.Printf("Size has been reached, stopping.")
 			break
 		}
 		if file.WillPrune() {
@@ -121,14 +128,31 @@ func (path *Path) MarkFileUntilFit() {
 			continue
 		}
 
-		fmt.Printf("%s will be pruned\n", file.AbsPath())
+		log.Printf("%s will be pruned, saving %dbytes", file.AbsPath(), file.Size())
 		if err := path.files[i].Prune(true); err == nil {
 			path.totalPruned = path.totalPruned + file.Size()
 		} else {
-			fmt.Println(err)
+			log.Print(err)
 		}
 	}
 
 	// just for run rescan everything
 	path.rescanForPruned()
+}
+
+// Prune will remove files that were marked for removing.
+func (path *Path) Prune() error {
+	for _, file := range path.files {
+		if file.WillPrune() {
+			log.Printf("Pruning %s", file.AbsPath())
+			err := AppFs.Remove(file.AbsPath())
+			if err != nil {
+				log.Print(err)
+				return err
+			}
+		}
+	}
+
+	_, err := path.ReadDir()
+	return err
 }

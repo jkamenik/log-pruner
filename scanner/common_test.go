@@ -1,6 +1,7 @@
 package scanner_test
 
 import (
+	"log"
 	"path"
 	"testing"
 
@@ -12,6 +13,7 @@ var AppFs = afero.NewMemMapFs()
 
 func init() {
 	scanner.AppFs = AppFs
+	log.SetFlags(log.LstdFlags | log.LUTC | log.Lshortfile)
 }
 
 // Init a memory logging fs with a single test file.  Returns the file
