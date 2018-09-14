@@ -16,7 +16,7 @@ func TestSimpleScan(t *testing.T) {
 	AppFs.MkdirAll("/logs/sub", 0644)
 	afero.WriteFile(AppFs, "/logs/sub/second.log", []byte("Some test log"), 0644)
 
-	path := scanner.NewPath("/logs", 3, 0)
+	path, _ := scanner.NewPath("/logs", 3, 0)
 	if len(path.Files()) < 2 {
 		t.Error("Path should contain at least one file.")
 	}
@@ -48,7 +48,7 @@ func TestResultsOrdered(t *testing.T) {
 	AppFs.Chtimes(second, secondTime, secondTime)
 	AppFs.Chtimes(third, secondTime, secondTime)
 
-	path := scanner.NewPath("/logs/sub", 3, 0)
+	path, _ := scanner.NewPath("/logs/sub", 3, 0)
 	if len(path.Files()) != 3 {
 		t.Error("Incorrect number of files found")
 	}
@@ -74,7 +74,7 @@ func TestMarkingOldFile(t *testing.T) {
 
 	AppFs.Chtimes(first, firstTime, firstTime)
 
-	path := scanner.NewPath("/logs/sub", 3, 0)
+	path, _ := scanner.NewPath("/logs/sub", 3, 0)
 	if path.TotalSize() != 26 || path.TotalAfterPrune() != 26 {
 		t.Error("Path.TotalSize() is different then expected", path.TotalSize())
 	}
@@ -101,7 +101,7 @@ func TestMarkingLargeFile(t *testing.T) {
 	afero.WriteFile(AppFs, "/logs/sub/a.log", []byte("Some test log"), 0644)
 
 	// This should prune only the first file
-	path := scanner.NewPath("/logs/sub", 100, 30)
+	path, err := scanner.NewPath("/logs/sub", 100, 30)
 
 	// Just prove that no files are pruned because of age
 	path.MarkOldFiles()
@@ -114,13 +114,13 @@ func TestMarkingLargeFile(t *testing.T) {
 		t.Error("Path.TotalAfterPrune() is different then expected", path.TotalAfterPrune())
 	}
 
-	path = scanner.NewPath("/logs/sub", 100, 25)
+	path, err = scanner.NewPath("/logs/sub", 100, 25)
 	path.MarkFileUntilFit()
 	if path.TotalSize() != 39 || path.TotalAfterPrune() != 13 {
 		t.Error("Path.TotalAfterPrune() is different then expected", path.TotalAfterPrune())
 	}
 
-	err := path.Prune()
+	err = path.Prune()
 	if err != nil {
 		t.Error("Failed to prune files.")
 	}
@@ -130,7 +130,7 @@ func TestMarkingLargeFile(t *testing.T) {
 	}
 
 	// use this to find all the files that weren't removed
-	path = scanner.NewPath("/logs/sub", 100, 25)
+	path, err = scanner.NewPath("/logs/sub", 100, 25)
 	if len(path.Files()) > 1 {
 		t.Error("Files where not removed.")
 	}

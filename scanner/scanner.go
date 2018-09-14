@@ -25,13 +25,13 @@ type Path struct {
 }
 
 // NewPath creates a new Path object containing the intial list of walked files from basePath.  These files can be later scanned for size or age.
-func NewPath(basePath string, fileAgeoutDays int, maxSizeBytes int64) *Path {
+func NewPath(basePath string, fileAgeoutDays int, maxSizeBytes int64) (*Path, error) {
 	log.Printf("NewPath for %s, %dDays, %dBytes", basePath, fileAgeoutDays, maxSizeBytes)
 	path := &Path{basePath: basePath, fileAgeoutDays: fileAgeoutDays, maxSizeBytes: maxSizeBytes}
 
-	path.ReadDir()
+	_, err := path.ReadDir()
 
-	return path
+	return path, err
 }
 
 // Files returns the full list of walked files
@@ -52,7 +52,7 @@ func (path *Path) ReadDir() ([]File, error) {
 			return err
 		}
 
-		if f.IsDir() {
+		if !f.Mode().IsRegular() {
 			return nil
 		}
 
@@ -115,7 +115,7 @@ func (path *Path) rescanForPruned() {
 	}
 }
 
-// TODO: SizeScan
+// MarkFileUntilFit checks all file sizes and marks only enough to get the directory under the target size
 func (path *Path) MarkFileUntilFit() {
 	log.Printf("MarkFileUntilFit into %dbytes, currently %dbytes", path.maxSizeBytes, path.TotalAfterPrune())
 	for i, file := range path.files {
