@@ -11,6 +11,7 @@ type settings struct {
 	paths          []string
 	pathTargetSize int
 	fileAgeMax     int
+	dryRun         bool
 }
 
 var allSettings = settings{}
@@ -38,4 +39,5 @@ func init() {
 	rootCmd.PersistentFlags().StringSliceVar(&allSettings.paths, "path", []string{"/logs"}, "One or more paths for the command to check.  Both comma separated and multiple arguments are allowed.  Each path is taken separately in its calculations.")
 	rootCmd.PersistentFlags().IntVar(&allSettings.pathTargetSize, "path-target-size", 10, "The target size for the entire path in GB.  Files will be deleted if the target size is greater then this value, even if no files are older then the max age.")
 	rootCmd.PersistentFlags().IntVar(&allSettings.fileAgeMax, "file-max-age", 3, "The max number of days to keep a file before it is deleted.")
+	rootCmd.PersistentFlags().BoolVar(&allSettings.dryRun, "dry-run", false, "Dry-run to show the output of what would happen without actually performing the work.")
 }

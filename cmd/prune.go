@@ -8,8 +8,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var dryRun = false
-
 // pruneCmd represents the prune command
 var pruneCmd = &cobra.Command{
 	Use:   "prune",
@@ -19,7 +17,7 @@ var pruneCmd = &cobra.Command{
 It will only exit with an error if there is a problem reading or deleting the files.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		for _, path := range allSettings.paths {
-			err := prune(path, allSettings.fileAgeMax, util.BytesFromGb(allSettings.pathTargetSize), dryRun)
+			err := prune(path, allSettings.fileAgeMax, util.BytesFromGb(allSettings.pathTargetSize), allSettings.dryRun)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -67,6 +65,4 @@ func prune(directory string, fileAge int, maxSize int64, dryRun bool) error {
 
 func init() {
 	rootCmd.AddCommand(pruneCmd)
-
-	pruneCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Dry-run to show the output of what would happen without actually performing the work.")
 }
