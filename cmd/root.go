@@ -20,9 +20,9 @@ var allSettings = settings{}
 var rootCmd = &cobra.Command{
 	Version: "1.0.0",
 	Use:     "log-pruner",
-	Long: `A command that either scan or monitors a diretory full of files and removes them based on age or size criteria.
+	Long: `A command that either scan or monitors a diretory and removes them based on age or size criteria.
 
-All supplied directories are scanned, and then pruned of files larger then their max age.  Then the files are rescanned and pruned if the path is still too large.
+All supplied directories are scanned, and then pruned of files older then their max age.  Then the files are rescanned and pruned if the path is still too large.
 `,
 }
 
