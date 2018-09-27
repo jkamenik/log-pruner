@@ -2,7 +2,7 @@
 
 A simple go server that monitors a directory and prunes files based on criteria.  It is intended to be deployed as a docker sidecar container in a Kubernetes cluster for containers that don't do log management themselves (namely Java servers).
 
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/6fa79687f0aa499fb0671497621f8b1e)](https://www.codacy.com/app/jkamenik_2/log-pruner?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=jkamenik/log-pruner&amp;utm_campaign=Badge_Grade) [![Build Status](https://www.travis-ci.com/jkamenik/log-pruner.svg?branch=jk-1.0-init)](https://www.travis-ci.com/jkamenik/log-pruner)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/6fa79687f0aa499fb0671497621f8b1e)](https://www.codacy.com/app/jkamenik_2/log-pruner?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=jkamenik/log-pruner&amp;utm_campaign=Badge_Grade) [![Build Status](https://www.travis-ci.com/jkamenik/log-pruner.svg?branch=jk-1.0-init)](https://www.travis-ci.com/jkamenik/log-pruner) [![Docker Repository on Quay](https://quay.io/repository/jkamenik/log-pruner/status "Docker Repository on Quay")](https://quay.io/repository/jkamenik/log-pruner)
 
 ## Docker Usage
 
